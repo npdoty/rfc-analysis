@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.bar rect {
+  fill: steelblue;
+  shape-rendering: crispEdges;
+}
+
+#graph-privacy .bar rect {
+  fill: green;
+}
+
+.bar text {
+  fill: #000;
+  font-size: 9px;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+figcaption {
+  font-style: italic;
+  font-size: 12px;
+}
+
+figure svg {
+  display: inline-block;
+}
+
+div.sidebar {
+  border-left: 1px solid black;
+  display: inline-block;
+  vertical-align: top;
+  height: 500px;
+  max-width: 30%;
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  height: 500px;
+}
+li {
+  margin-left: 20px;
+}
+
+</style>
+<script src="d3.min.js"></script>
+<script src="rfc-pretty.json"></script>
+<title>Histograms of IETF RFCs</title>
+</head>
+<body>
+<figure id="graph">
+  <div class="sidebar">
+    <ul>
+    </ul>
+  </div>
+  <figcaption>
+    RFCs published, by month    
+  </figcaption>
+</figure>
+<!-- <figure id="graph-privacy">
+  <div class="sidebar">
+    <ul>
+    </ul>
+  </div>
+  <figcaption>
+    Technical Reports mentioning "privacy" published by W3C, by month    
+  </figcaption>
+</figure> -->
+<script>
+var values = rfc_list;  // set in the loaded .json script
+
+function formatCount(d) {
+  if (d==0) { return ""; }
+  return d;
+}
+
+// http://stackoverflow.com/questions/2752349/fast-rectangle-to-rectangle-intersection
+function intersect(a, b) {
+  return (a.left <= b.right &&
+          b.left <= a.right &&
+          a.top <= b.bottom &&
+          b.top <= a.bottom)
+}
+
+var margin = {top: 30, right: 30, bottom: 30, left: 30},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x = d3.time.scale().domain(d3.extent(rfc_list, function(d) {return new Date(d["date_published"]);})).nice(d3.time.month).range([0, width]);
+
+insertHistogramForData(rfc_list, "figure#graph");
+
+// var privacy_list = tr_list.filter(function(el){
+//   return (el["privacy_search"] > 0);
+// });
+// insertHistogramForData(privacy_list, "figure#graph-privacy");
+
+function urlFromRFCNumber(number) {
+  return 'http://tools.ietf.org/html/' + number;
+}
+
+function insertHistogramForData(data_list, insertion_selector) {
+  var data = d3.layout.histogram()
+      .bins(x.ticks(d3.time.month, 1))
+      .value(function(d) { return new Date(d["date_published"]); })
+      (data_list);
+
+  var y = d3.scale.linear()
+      .domain([0, d3.max(data, function(d) { return d.y; })])
+      .range([height, 0]);
+      
+  function transform(d) {
+    return "translate(" + x(d.x) + "," + y(d.y) + ")";
+  }
+
+  var svg = d3.select(insertion_selector).insert("svg", "div")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var bar = svg.selectAll(".bar")
+      .data(data)
+    .enter().append("g")
+      .attr("class", "bar")
+      .attr("transform", transform);
+
+  var barWidth = x(new Date(data[0].x.getTime() + data[0].dx));
+  bar.append("rect")
+      .attr("x", 1)
+      .attr("width", barWidth)
+      .attr("height", function(d) { return height - y(d.y); });
+
+  svg.append("g").selectAll("text").data(data).enter().append("text")
+      .attr("y", -5)
+      .attr("x", x(new Date(data[0].x.getTime() + data[0].dx)) / 2)
+      .attr("text-anchor", "middle")
+      .attr("transform", transform)
+      .attr("class", "label")
+      .text(function(d) { return formatCount(d.y); });
+
+  var labels = svg.selectAll("text.label");
+  var bounding_boxes = [];
+  
+  bar.each(function(d, i){
+    bounds = this.getBoundingClientRect();
+    bounding_boxes.push(bounds);
+  });
+
+  labels.each(function(d, i){
+    bounds = this.getBoundingClientRect();
+    if (bounding_boxes.some(intersectsThis, bounds)) {
+      d3.select(this).remove();
+    } else {
+      bounding_boxes.push(bounds);
+    }
+  });
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom");
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+  
+  bar.on("mouseover", function(d){
+    var slist = d3.select(this.parentNode.parentNode.parentNode).select("ul").selectAll("li").data(d);
+    slist.enter().append("li")
+      .each(function(){
+        d3.select(this).insert("a");
+      });  // add more list items as necessary
+    
+    slist.each(function(d){    // if you use .each to insert nested nodes, use .each again to update them
+      d3.select(this).select("a")
+        .attr("href", urlFromRFCNumber(d["rfc_number"]))
+        .text(d["title"]);
+    });  // make all list items use the appropriate name
+      
+    slist.exit().remove();  // remove any list items now unnecessary
+  });
+}
+
+function intersectsThis(element, index, array) {
+  return intersect(element, this);
+}
+</script>
+</body>

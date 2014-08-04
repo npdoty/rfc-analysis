@@ -1,0 +1,3 @@
+Allow from All
+
+DirectoryIndex index.html rfc-graph.html

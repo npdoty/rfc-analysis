@@ -16,6 +16,11 @@ body {
   fill: green;
 }
 
+#graph-security .bar rect {
+  fill: orange;
+}
+
+
 .bar text {
   fill: #000;
   font-size: 9px;
@@ -27,6 +32,17 @@ body {
   shape-rendering: crispEdges;
 }
 
+.y.axis.count path, .y.axis.count line {
+  fill: none;
+  stroke: grey;
+  shape-rendering: crispEdges;
+}
+.y.axis.count text {
+  stroke: none;
+  fill: grey;
+}
+
+
 figcaption {
   font-style: italic;
   font-size: 12px;
@@ -37,10 +53,10 @@ figure svg {
 }
 
 div.sidebar {
-  border-left: 1px solid black;
+  #border-left: 1px solid black;
   display: inline-block;
   vertical-align: top;
-  height: 500px;
+  height: 350px;
   max-width: 30%;
 }
 
@@ -48,12 +64,19 @@ ul {
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
-  height: 500px;
+  height: 350px;
 }
 li {
   margin-left: 20px;
 }
 
+path.line {
+  fill: none;
+}
+
+path.percentage-line {
+  fill: none;
+}
 </style>
 <script src="d3.min.js"></script>
 <script src="rfc-pretty.json"></script>
@@ -75,9 +98,23 @@ li {
     </ul>
   </div>
   <figcaption>
-    Technical Reports mentioning "privacy" published by W3C, by month    
+    RFCs mentioning "privacy", by month    
+  </figcaption>
+</figure>
+<figure id="graph-security">
+  <div class="sidebar">
+    <ul>
+    </ul>
+  </div>
+  <figcaption>
+    RFCs mentioning "security", by month    
   </figcaption>
 </figure> -->
+<figure id="search-percentages">
+  <figcaption>
+    Percentage of published RFCs with search terms, by year
+  </figcaption>
+</figure>
 <script>
 var values = rfc_list;  // set in the loaded .json script
 
@@ -96,19 +133,147 @@ function intersect(a, b) {
 
 var margin = {top: 30, right: 30, bottom: 30, left: 30},
     width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+    height = 350 - margin.top - margin.bottom;
 
 var x = d3.time.scale().domain(d3.extent(rfc_list, function(d) {return new Date(d["date_published"]);})).nice(d3.time.month).range([0, width]);
 
 insertHistogramForData(rfc_list, "figure#graph");
 
-// var privacy_list = tr_list.filter(function(el){
+// var privacy_list = rfc_list.filter(function(el){
 //   return (el["privacy_search"] > 0);
 // });
 // insertHistogramForData(privacy_list, "figure#graph-privacy");
+// 
+// var security_list = rfc_list.filter(function(el){
+//   return (el["security_search"] > 0);
+// });
+// insertHistogramForData(security_list, "figure#graph-security");
+
 
 function urlFromRFCNumber(number) {
   return 'http://tools.ietf.org/html/' + number;
+}
+
+var searches = ['privacy', 'security', 'Web'];
+lineGraphsForSearches(rfc_list, "figure#search-percentages", searches);
+
+function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
+  
+  var histogram = d3.layout.histogram()
+      //.bins(x.ticks(d3.time.month, 3))  // aggregated by quarter
+      .bins(x.ticks(d3.time.year, 1)) // aggregated by year
+      .value(function(d) { return new Date(d["date_published"]); });
+  
+  var color = d3.scale.category10();
+  
+  var lines_data = [];
+  search_terms.forEach(function(term) {
+    var filtered_list = rfc_list.filter(function(el){
+      return (el[term + "_search"] > 0);
+    });
+    lines_data.push(histogram(filtered_list));
+  });
+  window.lines_data = lines_data;
+  
+  var data = histogram(data_list);
+  
+  var y = d3.scale.linear()
+    .domain([0,d3.max(data, function(d) { return d.y; })])
+    .range([height, 0]);
+  
+  var y_percentage = d3.scale.linear()
+    .domain([0, 1])
+    .range([height, 0]);
+  
+  var line_data = [data];
+  window.data = data;
+  
+  var svg = d3.select(insertion_selector).insert("svg", "figcaption")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom");
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+  
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .ticks(5);
+  svg.append("g")
+      .attr("class", "y axis count")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Count of RFCs published");
+  
+  var yAxisRight = d3.svg.axis()
+    .scale(y_percentage)
+    .orient("right")
+    .ticks(5)
+    .tickFormat(d3.format("%"));
+  svg.append("g")
+    .attr("class", "y axis percentage")
+    .attr("transform", "translate(" + (width - 5) + ", 0)")
+    .call(yAxisRight)
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("dy", "-.5em")
+    .style("text-anchor", "end")
+    .text("Percentage mentioning term");
+  
+  var deltaX = x(new Date(data[0].x.getTime() + data[0].dx)) / 2;
+  
+  var line = d3.svg.line()
+    .x(function(d) { return x(d.x) + deltaX; })
+    .y(function(d) { return y(d.y); });
+  
+  var line_percentage = d3.svg.line()
+    .x(function(d) { return x(d.x) + deltaX; })
+    .y(function(d, i) {
+      if (data[i].y == 0) {
+        return 0;
+      }
+      return y_percentage(d.y / data[i].y); 
+    });
+  
+  var lines = svg.selectAll(".line").data(line_data)
+    .enter()
+    .append("path")
+    .attr("class", "line")
+    .attr("stroke-dasharray", "5,5")
+    .attr("d", function(d) { return line(d); })
+    //.attr("opacity", 0.5)
+    .style("stroke", "grey");
+  
+  var percentage_lines = svg.selectAll(".percentage-line").data(lines_data)
+    .enter()
+    .append("g");
+    
+  percentage_lines.append("path")
+    .attr("class", "percentage-line")
+    .attr("d", function(d) { return line_percentage(d); })
+    .style("stroke", function(d) { return color(d); });
+  
+  percentage_lines.append("text").datum(function(d, i){
+    var fraction = Math.round(d.length * .7);
+    return {term: search_terms[i], value: d[fraction], fraction: fraction}; })
+    //.attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y_percentage(d.value.y / data[d.fraction].y) + ")"; })
+      .attr("x", function(d) {
+        return x(d.value.x);
+      })
+      .attr("y", function(d) {return y_percentage(d.value.y / data[d.fraction].y);})
+      .attr("dy", "1em")
+      .text(function(d) { return d.term; });
 }
 
 function insertHistogramForData(data_list, insertion_selector) {

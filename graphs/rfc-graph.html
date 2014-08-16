@@ -80,39 +80,27 @@ path.percentage-line {
 </style>
 <script src="d3.min.js"></script>
 <script src="rfc-pretty.json"></script>
-<title>Histograms of IETF RFCs</title>
+<script src="tr-pretty.json"></script>
+<title>Histograms of IETF RFCs and W3C TRs</title>
 </head>
 <body>
-<figure id="graph">
-  <div class="sidebar">
+<figure id="rfc-month-graph">
+  <!-- <div class="sidebar">
     <ul>
     </ul>
-  </div>
+  </div> -->
   <figcaption>
     RFCs published, by month    
   </figcaption>
 </figure>
-<!-- <figure id="graph-privacy">
-  <div class="sidebar">
-    <ul>
-    </ul>
-  </div>
-  <figcaption>
-    RFCs mentioning "privacy", by month    
-  </figcaption>
-</figure>
-<figure id="graph-security">
-  <div class="sidebar">
-    <ul>
-    </ul>
-  </div>
-  <figcaption>
-    RFCs mentioning "security", by month    
-  </figcaption>
-</figure> -->
-<figure id="search-percentages">
+<figure id="rfc-search-percentages">
   <figcaption>
     Percentage of published RFCs with search terms, by year
+  </figcaption>
+</figure>
+<figure id="tr-search-percentages">
+  <figcaption>
+    Percentage of published TRs with search terms, by year
   </figcaption>
 </figure>
 <script>
@@ -137,27 +125,18 @@ var margin = {top: 30, right: 30, bottom: 30, left: 30},
 
 var x = d3.time.scale().domain(d3.extent(rfc_list, function(d) {return new Date(d["date_published"]);})).nice(d3.time.month).range([0, width]);
 
-insertHistogramForData(rfc_list, "figure#graph");
-
-// var privacy_list = rfc_list.filter(function(el){
-//   return (el["privacy_search"] > 0);
-// });
-// insertHistogramForData(privacy_list, "figure#graph-privacy");
-// 
-// var security_list = rfc_list.filter(function(el){
-//   return (el["security_search"] > 0);
-// });
-// insertHistogramForData(security_list, "figure#graph-security");
-
+insertHistogramForData(rfc_list, "figure#rfc-month-graph");
 
 function urlFromRFCNumber(number) {
   return 'http://tools.ietf.org/html/' + number;
 }
 
-var searches = ['privacy', 'security', 'Web'];
-lineGraphsForSearches(rfc_list, "figure#search-percentages", searches);
+var searches = ['privacy', 'security']; // also supported: 'Web'
+lineGraphsForSearches(rfc_list, "figure#rfc-search-percentages", searches, "Count of RFCs published");
+lineGraphsForSearches(tr_list, "figure#tr-search-percentages", searches, "Coutn of TRs published");
 
-function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
+function lineGraphsForSearches(data_list, insertion_selector, search_terms, label) {
+  var x = d3.time.scale().domain(d3.extent(data_list, function(d) {return new Date(d["date_published"]);})).nice(d3.time.year).range([0, width]);
   
   var histogram = d3.layout.histogram()
       //.bins(x.ticks(d3.time.month, 3))  // aggregated by quarter
@@ -168,12 +147,11 @@ function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
   
   var lines_data = [];
   search_terms.forEach(function(term) {
-    var filtered_list = rfc_list.filter(function(el){
+    var filtered_list = data_list.filter(function(el){
       return (el[term + "_search"] > 0);
     });
     lines_data.push(histogram(filtered_list));
   });
-  window.lines_data = lines_data;
   
   var data = histogram(data_list);
   
@@ -214,7 +192,7 @@ function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
-      .text("Count of RFCs published");
+      .text(label);
   
   var yAxisRight = d3.svg.axis()
     .scale(y_percentage)
@@ -232,6 +210,7 @@ function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
     .text("Percentage mentioning term");
   
   var deltaX = x(new Date(data[0].x.getTime() + data[0].dx)) / 2;
+  deltaX = 0; // don't need to move by half the bin size
   
   var line = d3.svg.line()
     .x(function(d) { return x(d.x) + deltaX; })
@@ -241,7 +220,7 @@ function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
     .x(function(d) { return x(d.x) + deltaX; })
     .y(function(d, i) {
       if (data[i].y == 0) {
-        return 0;
+        return y_percentage(0);
       }
       return y_percentage(d.y / data[i].y); 
     });
@@ -252,7 +231,6 @@ function lineGraphsForSearches(data_list, insertion_selector, search_terms) {
     .attr("class", "line")
     .attr("stroke-dasharray", "5,5")
     .attr("d", function(d) { return line(d); })
-    //.attr("opacity", 0.5)
     .style("stroke", "grey");
   
   var percentage_lines = svg.selectAll(".percentage-line").data(lines_data)
@@ -290,7 +268,7 @@ function insertHistogramForData(data_list, insertion_selector) {
     return "translate(" + x(d.x) + "," + y(d.y) + ")";
   }
 
-  var svg = d3.select(insertion_selector).insert("svg", "div")
+  var svg = d3.select(insertion_selector).insert("svg", "figcaption")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
     .append("g")
@@ -341,21 +319,21 @@ function insertHistogramForData(data_list, insertion_selector) {
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
   
-  bar.on("mouseover", function(d){
-    var slist = d3.select(this.parentNode.parentNode.parentNode).select("ul").selectAll("li").data(d);
-    slist.enter().append("li")
-      .each(function(){
-        d3.select(this).insert("a");
-      });  // add more list items as necessary
-    
-    slist.each(function(d){    // if you use .each to insert nested nodes, use .each again to update them
-      d3.select(this).select("a")
-        .attr("href", urlFromRFCNumber(d["rfc_number"]))
-        .text(d["title"]);
-    });  // make all list items use the appropriate name
-      
-    slist.exit().remove();  // remove any list items now unnecessary
-  });
+  // bar.on("mouseover", function(d){
+  //   var slist = d3.select(this.parentNode.parentNode.parentNode).select("ul").selectAll("li").data(d);
+  //   slist.enter().append("li")
+  //     .each(function(){
+  //       d3.select(this).insert("a");
+  //     });  // add more list items as necessary
+  //   
+  //   slist.each(function(d){    // if you use .each to insert nested nodes, use .each again to update them
+  //     d3.select(this).select("a")
+  //       .attr("href", urlFromRFCNumber(d["rfc_number"]))
+  //       .text(d["title"]);
+  //   });  // make all list items use the appropriate name
+  //     
+  //   slist.exit().remove();  // remove any list items now unnecessary
+  // });
 }
 
 function intersectsThis(element, index, array) {

@@ -31,11 +31,54 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
       continue
     
     with open(filename, 'r') as txt_file:
-      text = txt_file.read()
+      # text = txt_file.read()
+      #
+      # for term in search_terms:
+      #   matches = re.findall(term, text, flags=re.IGNORECASE)
+      #   entry[term+'_search'] = len(matches)
+    
+      lines = txt_file.readlines()
+      print(filename)
       
-      for term in search_terms:
-        matches = re.findall(term, text, flags=re.IGNORECASE)
-        entry[term+'_search'] = len(matches)
+      # identifying the section titles
+      potential_section_name = False
+      section_name = ''
+      empty_line = False
+      previous_empty_line = False
+      
+      for line in lines:
+        if re.match('\s+$', line):
+          empty_line = True
+        else:
+          empty_line = False
+        
+        if potential_section_name and empty_line:
+          logging.warning(section_name)
+          potential_section_name = False
+          previous_empty_line = empty_line
+          continue
+        
+        match = re.match('\d+\.?\s+([A-Z].+)$', line)
+        non_numbered_match = re.match('([A-Z][\w\s\d-]+)$', line)
+        if match:
+          if not re.search('\.\.\.', line) and (not re.search('\s\s+\d+\s$', line)) and previous_empty_line:
+            # multiple dots or multiple spaces before a number is a ToC entry, 
+            # previous line should be blank
+            potential_section_name = True
+            section_name = match.group(1).strip()
+          else:
+            potential_section_name = False
+        elif non_numbered_match:
+          if not re.search('\s\s', line) and previous_empty_line: 
+            # shouldn't have multiple consecutive spaces, previous line should be blank
+            potential_section_name = True
+            section_name = non_numbered_match.group(1).strip()
+          else:
+            potential_section_name = False
+        else:
+          potential_section_name = False  
+        
+        previous_empty_line = empty_line
   
-  with open(JSON_OUTPUT_FILENAME, 'wb') as outfile:
-    outfile.write(json.dumps(entries))
+  #with open(JSON_OUTPUT_FILENAME, 'wb') as outfile:
+  #  outfile.write(json.dumps(entries))

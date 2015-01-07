@@ -38,13 +38,17 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
       #   entry[term+'_search'] = len(matches)
     
       lines = txt_file.readlines()
-      print(filename)
+      logging.info(filename)
+      entry['lines'] = len(lines)
       
       # identifying the section titles
       potential_section_name = False
+      current_section_name = ''
       section_name = ''
       empty_line = False
       previous_empty_line = False
+      line_count = 0
+      entry['sections'] = {}
       
       for line in lines:
         if re.match('\s+$', line):
@@ -53,7 +57,10 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
           empty_line = False
         
         if potential_section_name and empty_line:
-          logging.warning(section_name)
+          logging.info(section_name)
+          entry['sections'][current_section_name] = line_count
+          current_section_name = section_name
+          line_count = 1
           potential_section_name = False
           previous_empty_line = empty_line
           continue
@@ -79,6 +86,14 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
           potential_section_name = False  
         
         previous_empty_line = empty_line
+        line_count += 1
+      
+    with open(filename, 'r') as txt_file:
+      text = txt_file.read()
+
+      for term in search_terms:
+        matches = re.findall(term, text, flags=re.IGNORECASE)
+        entry[term+'_search'] = len(matches)      
   
-  #with open(JSON_OUTPUT_FILENAME, 'wb') as outfile:
-  #  outfile.write(json.dumps(entries))
+  with open(JSON_OUTPUT_FILENAME, 'wb') as outfile:
+    outfile.write(json.dumps(entries))

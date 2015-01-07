@@ -1,0 +1,75 @@
+.bar rect {
+  fill: steelblue;
+  shape-rendering: crispEdges;
+}
+
+#graph-privacy .bar rect {
+  fill: green;
+}
+
+#graph-security .bar rect {
+  fill: orange;
+}
+
+
+.bar text {
+  fill: #000;
+  font-size: 9px;
+}
+
+text {
+  font-size: 10px;
+  font-family: sans-serif;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.y.axis.count path, .y.axis.count line {
+  fill: none;
+  stroke: grey;
+  shape-rendering: crispEdges;
+}
+.y.axis.count text {
+  stroke: none;
+  fill: grey;
+}
+
+
+figcaption {
+  font-style: italic;
+  font-size: 12px;
+}
+
+figure svg {
+  display: inline-block;
+}
+
+div.sidebar {
+  #border-left: 1px solid black;
+  display: inline-block;
+  vertical-align: top;
+  height: 350px;
+  max-width: 30%;
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  height: 350px;
+}
+li {
+  margin-left: 20px;
+}
+
+path.line {
+  fill: none;
+}
+
+path.percentage-line {
+  fill: none;
+}

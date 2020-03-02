@@ -95,5 +95,5 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
         matches = re.findall(term, text, flags=re.IGNORECASE)
         entry[term+'_search'] = len(matches)      
   
-  with open(JSON_OUTPUT_FILENAME, 'wb') as outfile:
-    outfile.write(json.dumps(entries))
+  with open(JSON_OUTPUT_FILENAME, 'w') as outfile:
+    json.dump(entries, outfile)

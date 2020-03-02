@@ -41,5 +41,5 @@ with open(RFC_INDEX_FILENAME, 'r') as xmlfile:
 
   # entries = [dict(tupleized) for tupleized in set(tuple(item.items()) for item in entries)]
 
-  with open('rfc.json', 'wb') as jsonfile:
-    jsonfile.write(json.dumps(entries))
+  with open('rfc.json', 'w') as jsonfile:
+    json.dump(entries, jsonfile)

@@ -7,7 +7,11 @@ affiliation_rexp = "   (\w[\w \.]+)$"
 date_rexp = "   (\w+ \d\d\d\d)$"
 
 
-def parse_metadata(rfc_number):
+def extract_metadata(rfc_number):
+    """
+    Returns a list of author, affiliation, and date
+    dicts in order that they appear in the RFC text.
+    """
     filename = archived_txt(rfc_number)
     print(filename)
 
@@ -37,10 +41,37 @@ def parse_metadata(rfc_number):
 
     raise Exception("Metadata parser did not find end of whitespace header.")
 
+def compile_metadata(metadata):
+    """
+    Input: List of name, affiliation, and date dicts
+    Output: object with
+        parsed date and
+        matched names and affiliations.
+    """
+    names = []
+    people = []
+
+    for entry in metadata:
+        if 'author' in entry:
+            names.append(entry['author'])
+        elif 'affiliation' in entry:
+            for name in names:
+                people.append({
+                    'name' : name,
+                    'affiliation' : entry['affiliation']
+                })
+            names = []
+        elif 'date' in entry:
+            return {
+                'date' : entry['date'],
+                'authors' : people
+            }
+
 def main():
     # just a smoke test
-    metadata = parse_metadata("rfc8012")
-    print(metadata)
+    metadata = extract_metadata("rfc8012")
+    cm = compile_metadata(metadata)
+    print(cm)
         
 if __name__== "__main__":
     main()

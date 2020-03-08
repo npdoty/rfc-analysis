@@ -1,3 +1,4 @@
+import datetime
 from gather import *
 import json
 import os
@@ -6,7 +7,7 @@ from search import filename_from_rfc_number, iterate_rfc_files, normalize_rfc_nu
 
 author_rexp = "   (\w\. [\w-]+,? ?\w+\.?)$"
 affiliation_rexp = "   (\w[\w \.,\+-]+)$"
-date_rexp = "   ((?:\d?(\d )?)?\w+ \d\d\d\d)$"
+date_rexp = "   (?:\d?(\d )?)(\w+ \d\d\d\d)$"
 
 
 def extract_metadata(filename):
@@ -33,11 +34,9 @@ def extract_metadata(filename):
             elif date_match:
                 ## Note: date regexp is strictly more restrictive
                 ## than affiliation regexp, so has to be tested first
-                metadata.append({'date' : date_match[1]})
+                metadata.append({'date' : date_match.groups()[1]})
             elif affiliation_match:
                 metadata.append({'affiliation' : affiliation_match[1]})
-            elif not line == "":
-                pass
             elif not header:
                 return metadata
 
@@ -65,7 +64,9 @@ def compile_metadata(metadata):
             names = []
         elif 'date' in entry:
             return {
-                'date' : entry['date'],
+                'date' : datetime.datetime.strptime(
+                    entry['date'],
+                    "%B %Y"),
                 'authors' : people
             }
 

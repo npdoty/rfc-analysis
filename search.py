@@ -108,8 +108,7 @@ def main():
     entries = json.load(jsonfile)
   
   for entry, filename in iterate_rfc_files(entries):
-    with open(filename, 'r') as txt_file:
-      parse_sections(entry,filename)
+    parse_sections(entry,filename)
 
   with open(JSON_OUTPUT_FILENAME, 'w') as outfile:
     json.dump(entries, outfile)

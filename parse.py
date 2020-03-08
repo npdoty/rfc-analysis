@@ -2,6 +2,7 @@ import datetime
 from gather import *
 import json
 import os
+import pandas as pd
 import re
 from search import filename_from_rfc_number, iterate_rfc_files, normalize_rfc_number, JSON_INPUT_FILENAME
 
@@ -71,6 +72,7 @@ def compile_metadata(metadata):
             }
 
 def main():
+    records = []
 
     filenames = os.listdir('RFC-all')
    
@@ -80,10 +82,18 @@ def main():
             metadata = extract_metadata(fn)
             cm = compile_metadata(metadata)
 
-            if cm is not None:
-                print(cm)
-            else:
-                print(filename + " metadata was not parsed.")
+            if cm is not None and 'authors' in cm:
+                for author in cm['authors']:
+                    records.append({
+                        'date' : cm['date'],
+                        'name' : author['name'],
+                        'affiliation' : author['affiliation'],
+                        'rfc' : filename[:-4]
+                    })
+
+    df = pd.DataFrame.from_records(records)
+    print(df)
+    df.to_csv("authors.csv")
         
 if __name__== "__main__":
     main()

@@ -9,6 +9,8 @@ import json
 from gather import * 
 import logging
 
+logging.basicConfig(filename='search.log')
+
 JSON_INPUT_FILENAME = 'rfc.json'
 JSON_OUTPUT_FILENAME = 'rfc-search.json'
 

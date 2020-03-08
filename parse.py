@@ -41,7 +41,7 @@ def extract_metadata(rfc_filename):
             elif not header:
                 return metadata
 
-    raise Exception("Metadata parser did not find end of whitespace header.")
+    raise Exception("%s : Metadata parser did not find end of whitespace header." % (filename))
 
 def compile_metadata(metadata):
     """

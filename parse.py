@@ -4,7 +4,7 @@ import os
 import re
 from search import filename_from_rfc_number, iterate_rfc_files, normalize_rfc_number, JSON_INPUT_FILENAME
 
-author_rexp = "   (\w\. \w+)$"
+author_rexp = "   (\w\. \w+,? ?\w+\.?)$"
 affiliation_rexp = "   (\w[\w \.]+)$"
 date_rexp = "   (\w+ \d\d\d\d)$"
 

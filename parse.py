@@ -1,19 +1,21 @@
 from gather import *
+import json
+import os
 import re
-from search import normalize_rfc_number
+from search import filename_from_rfc_number, iterate_rfc_files, normalize_rfc_number, JSON_INPUT_FILENAME
 
 author_rexp = "   (\w\. \w+)$"
 affiliation_rexp = "   (\w[\w \.]+)$"
 date_rexp = "   (\w+ \d\d\d\d)$"
 
 
-def extract_metadata(rfc_number):
+def extract_metadata(rfc_filename):
     """
     Returns a list of author, affiliation, and date
     dicts in order that they appear in the RFC text.
     """
-    filename = archived_txt(rfc_number)
-    print(filename)
+
+    filename = filename_from_rfc_number(rfc_filename[:-4])
 
     with open(filename, 'r') as txt_file:
         lines = txt_file.readlines()
@@ -68,10 +70,13 @@ def compile_metadata(metadata):
             }
 
 def main():
-    # just a smoke test
-    metadata = extract_metadata("rfc8012")
-    cm = compile_metadata(metadata)
-    print(cm)
+
+    filenames = os.listdir('RFC-all')
+   
+    for filename in filenames:
+        metadata = extract_metadata(filename)
+        cm = compile_metadata(metadata)
+        print(cm)
         
 if __name__== "__main__":
     main()

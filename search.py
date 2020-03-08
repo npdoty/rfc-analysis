@@ -21,13 +21,18 @@ def normalize_rfc_number(number):
   normalized = 'rfc' + just_number.lstrip('0')
   return normalized
 
+def filename_from_rfc_number(rfc_number):
+  return archived_txt(
+    normalize_rfc_number(
+      rfc_number))
+
+
 def iterate_rfc_files(entries):
   with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
     entries = json.load(jsonfile)
 
     for entry in entries:
-      filename = archived_txt(normalize_rfc_number(entry['rfc_number']))
-
+      filename = filename_from_rfc_number(entry['rfc_number'])
       if not filename:
         logging.warning(entry['rfc_number'] + ' has no available file.')
         #raise Exception(entry['rfc_number'] + ' has no available file.')

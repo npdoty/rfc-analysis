@@ -1,5 +1,4 @@
-import urllib2
-import urllib
+import urllib.request, urllib.error, urllib.parse
 import re
 import os
 from pprint import pprint as pp
@@ -30,7 +29,7 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
       #raise Exception(entry['rfc_number'] + ' has no available file.')
       continue
     
-    with open(filename, 'r') as txt_file:
+    with open(filename, 'r', errors='replace') as txt_file:
       # text = txt_file.read()
       #
       # for term in search_terms:
@@ -88,12 +87,12 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
         previous_empty_line = empty_line
         line_count += 1
       
-    with open(filename, 'r') as txt_file:
+    with open(filename, 'r', errors='replace') as txt_file:
       text = txt_file.read()
 
       for term in search_terms:
         matches = re.findall(term, text, flags=re.IGNORECASE)
         entry[term+'_search'] = len(matches)      
   
-  with open(JSON_OUTPUT_FILENAME, 'wb') as outfile:
-    outfile.write(json.dumps(entries))
+  with open(JSON_OUTPUT_FILENAME, 'w') as outfile:
+    json.dump(entries, outfile)

@@ -1,5 +1,4 @@
-import urllib2
-import urllib
+import urllib.request, urllib.error, urllib.parse
 import re
 import os
 from pprint import pprint as pp
@@ -21,19 +20,25 @@ with open(RFC_INDEX_FILENAME, 'r') as xmlfile:
   entries = list()
 
   for row in rows:
-    entry = dict()
-    entry['rfc_number'] = unicode(row.find('doc-id').string).encode('utf-8')
-    pp(entry['rfc_number'])
-    entry['title'] = unicode(row.find('title').string).encode('utf-8')
+    try:
+      entry = dict()
+      entry['rfc_number'] = str(row.find('doc-id').string)
+      pp(entry['rfc_number'])
+      entry['title'] = str(row.find('title').string)
     
-    date_string = ' '.join(['01', unicode(row.select('date > month')[0].string).encode('utf-8'), unicode(row.select('date > year')[0].string).encode('utf-8')])
-    date_published = datetime.strptime(date_string, '%d %B %Y')
-    entry['date_published'] = date_published.strftime('%Y-%m-%d').encode('utf-8')
-    entries.append(entry)
+      date_string = ' '.join(
+        ['01',
+         str(row.select('date > month')[0].string),
+         str(row.select('date > year')[0].string)])
+      date_published = datetime.strptime(date_string, '%d %B %Y')
+      entry['date_published'] = date_published.strftime('%Y-%m-%d')
+      entries.append(entry)
 
-  pp(len(entries))
+      pp(len(entries))
+    except Exception as e:
+      print("%s: %s" % (entry['rfc_number'], e))
 
   # entries = [dict(tupleized) for tupleized in set(tuple(item.items()) for item in entries)]
 
-  with open('rfc.json', 'wb') as jsonfile:
-    jsonfile.write(json.dumps(entries))
+  with open('rfc.json', 'w') as jsonfile:
+    json.dump(entries, jsonfile)

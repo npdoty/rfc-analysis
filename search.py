@@ -30,7 +30,7 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
       #raise Exception(entry['rfc_number'] + ' has no available file.')
       continue
     
-    with open(filename, 'r') as txt_file:
+    with open(filename, 'r', errors='replace') as txt_file:
       # text = txt_file.read()
       #
       # for term in search_terms:
@@ -88,7 +88,7 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
         previous_empty_line = empty_line
         line_count += 1
       
-    with open(filename, 'r') as txt_file:
+    with open(filename, 'r', errors='replace') as txt_file:
       text = txt_file.read()
 
       for term in search_terms:

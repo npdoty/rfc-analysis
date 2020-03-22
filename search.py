@@ -1,5 +1,4 @@
 import urllib.request, urllib.error, urllib.parse
-import urllib.request, urllib.parse, urllib.error
 import re
 import os
 from pprint import pprint as pp

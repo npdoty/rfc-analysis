@@ -1,9 +1,11 @@
 import urllib.request, urllib.parse, urllib.error
 import re
 import os
-from pprint import pprint as pp
+import configparser
 
-ARCHIVE_DIR = "RFC-all"
+config = configparser.ConfigParser()
+config.read('config.ini')
+ARCHIVE_DIR = config['RFCS'].get('ARCHIVE_DIR', "RFC-all")
 
 def archived_txt(rfc_number):
   arc_file = os.path.join(ARCHIVE_DIR, rfc_number.lower() + '.txt')

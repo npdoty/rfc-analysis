@@ -12,8 +12,8 @@ Scripts are not fully parameterized or user friendly. Current usage pattern:
 
 * clone the repository
 * download all RFCs (see "Getting the documents" below) as .txt into a `RFC-all` directory within the main directory of the repository
-* (optional: downloaded an updated version of [rfc-index.xml from the IETF](https://www.rfc-editor.org/rfc-index.xml))
-* `python search.py` will create a file `rfc-search.json` with the section titles and lengths for every available RFC
+* configure by copying `config.ini.example` to `config.ini` and pointing it to your downloaded RFCs
+* `python search.py` will create a file `rfc-search.json` with section titles and lengths and word search counts for every available RFC
 
 Other functionality:
 

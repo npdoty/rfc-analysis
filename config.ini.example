@@ -1,0 +1,5 @@
+[RFCS]
+ARCHIVE_DIR = RFC-all
+
+[IDS]
+ID_DIR = short-id

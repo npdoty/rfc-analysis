@@ -7,9 +7,10 @@ from bs4 import BeautifulSoup
 import json
 from gather import * 
 import logging
+import xml.etree.ElementTree
 
-JSON_INPUT_FILENAME = 'rfc.json'
 JSON_OUTPUT_FILENAME = 'rfc-search.json'
+RFC_INDEX_FILENAME = 'rfc-index.xml'
 
 search_terms = ['privacy','security','Web']
 
@@ -18,24 +19,27 @@ def normalize_rfc_number(number):
   normalized = 'rfc' + just_number.lstrip('0')
   return normalized
 
-with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
-  entries = json.load(jsonfile)
+with open(os.path.join(ARCHIVE_DIR, RFC_INDEX_FILENAME), 'r') as xmlfile:
+  root = xml.etree.ElementTree.parse(xmlfile)
   
-  for entry in entries:
-    filename = archived_txt(normalize_rfc_number(entry['rfc_number']))
+  ns = {'rfc':'http://www.rfc-editor.org/rfc-index'}
+  entries_elements = root.findall('.//rfc:rfc-entry', ns)
+  entries = []
+
+  for entry_element in entries_elements:
+    doc_id = entry_element.find('./rfc:doc-id', ns)
+    filename = archived_txt(normalize_rfc_number(doc_id.text))
     
+    entry = {'rfc_number': doc_id.text,
+             'title': entry_element.find('./rfc:title', ns).text,
+             'year': entry_element.find('.//rfc:year', ns).text
+            }
+
     if not filename:
-      logging.warning(entry['rfc_number'] + ' has no available file.')
-      #raise Exception(entry['rfc_number'] + ' has no available file.')
+      logging.warning(doc_id.text + ' has no available file.')
       continue
     
-    with open(filename, 'r', errors='replace') as txt_file:
-      # text = txt_file.read()
-      #
-      # for term in search_terms:
-      #   matches = re.findall(term, text, flags=re.IGNORECASE)
-      #   entry[term+'_search'] = len(matches)
-    
+    with open(filename, 'r', errors='replace') as txt_file:    
       lines = txt_file.readlines()
       logging.info(filename)
       entry['lines'] = len(lines)
@@ -92,7 +96,9 @@ with open(JSON_INPUT_FILENAME, 'r') as jsonfile:
 
       for term in search_terms:
         matches = re.findall(term, text, flags=re.IGNORECASE)
-        entry[term+'_search'] = len(matches)      
+        entry[term+'_search'] = len(matches)  
+
+    entries.append(entry)    
   
   with open(JSON_OUTPUT_FILENAME, 'w') as outfile:
     json.dump(entries, outfile)

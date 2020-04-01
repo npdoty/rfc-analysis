@@ -1,6 +1,9 @@
 # Downloaded html and other files
 RFC-all/
 
+# personalized config
+config.ini
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

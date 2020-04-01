@@ -4,6 +4,10 @@ RFC-all/
 # personalized config
 config.ini
 
+# output files
+id-search.json
+rfc-search.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

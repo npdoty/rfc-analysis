@@ -11,9 +11,15 @@ import xml.etree.ElementTree
 from optparse import OptionParser
 
 JSON_OUTPUT_FILENAME = 'rfc-search.json'
+ID_JSON_OUTPUT_FILENAME = 'id-search.json'
 RFC_INDEX_FILENAME = 'rfc-index.xml'
 
 search_terms = ['privacy','security','Web']
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+ARCHIVE_DIR = config['RFCS'].get('ARCHIVE_DIR', "RFC-all")
+ID_DIR = config['IDS'].get('ID_DIR', None)
 
 def main():
   parser = OptionParser()
@@ -47,12 +53,36 @@ def main():
     search_rfcs()
 
   if options.search_ids:
-    raise NotImplementedError
+    search_ids()
 
 def normalize_rfc_number(number):
   just_number = number.lower().split('rfc')[1]
   normalized = 'rfc' + just_number.lstrip('0')
   return normalized
+
+def search_ids():
+  if ID_DIR == None:
+    logging.error('Could not find I-D directory from config.')
+    return
+  
+  files = os.listdir(ID_DIR)
+
+  entries = []
+  for filename in files:
+    entry = {'shortname': filename}
+
+    filepath = os.path.join(ID_DIR, filename)
+
+    sections = extract_sections(filepath)
+    entry.update(sections)
+
+    terms = extract_terms(filepath)
+    entry.update(terms)
+
+    entries.append(entry)   
+
+  with open(ID_JSON_OUTPUT_FILENAME, 'w') as outfile:
+    json.dump(entries, outfile)
 
 def search_rfcs():
   with open(os.path.join(ARCHIVE_DIR, RFC_INDEX_FILENAME), 'r') as xmlfile:
@@ -75,69 +105,85 @@ def search_rfcs():
         logging.warning(doc_id.text + ' has no available file.')
         continue
       
-      with open(filename, 'r', errors='replace') as txt_file:    
-        lines = txt_file.readlines()
-        logging.info(filename)
-        entry['lines'] = len(lines)
-        
-        # identifying the section titles
-        potential_section_name = False
-        current_section_name = ''
-        section_name = ''
-        empty_line = False
-        previous_empty_line = False
-        line_count = 0
-        entry['sections'] = {}
-        
-        for line in lines:
-          if re.match('\s+$', line):
-            empty_line = True
-          else:
-            empty_line = False
-          
-          if potential_section_name and empty_line:
-            logging.info(section_name)
-            entry['sections'][current_section_name] = line_count
-            current_section_name = section_name
-            line_count = 1
-            potential_section_name = False
-            previous_empty_line = empty_line
-            continue
-          
-          match = re.match('\d+\.?\s+([A-Z].+)$', line)
-          non_numbered_match = re.match('([A-Z][\w\s\d-]+)$', line)
-          if match:
-            if not re.search('\.\.\.', line) and (not re.search('\s\s+\d+\s$', line)) and previous_empty_line:
-              # multiple dots or multiple spaces before a number is a ToC entry, 
-              # previous line should be blank
-              potential_section_name = True
-              section_name = match.group(1).strip()
-            else:
-              potential_section_name = False
-          elif non_numbered_match:
-            if not re.search('\s\s', line) and previous_empty_line: 
-              # shouldn't have multiple consecutive spaces, previous line should be blank
-              potential_section_name = True
-              section_name = non_numbered_match.group(1).strip()
-            else:
-              potential_section_name = False
-          else:
-            potential_section_name = False  
-          
-          previous_empty_line = empty_line
-          line_count += 1
-        
-      with open(filename, 'r', errors='replace') as txt_file:
-        text = txt_file.read()
+      sections = extract_sections(filename)
+      entry.update(sections)
 
-        for term in search_terms:
-          matches = re.findall(term, text, flags=re.IGNORECASE)
-          entry[term+'_search'] = len(matches)  
+      terms = extract_terms(filename)
+      entry.update(terms)
 
       entries.append(entry)    
     
     with open(JSON_OUTPUT_FILENAME, 'w') as outfile:
       json.dump(entries, outfile)
+
+def extract_terms(filename):
+  entry = {}
+
+  with open(filename, 'r', errors='replace') as txt_file:
+    text = txt_file.read()
+
+    for term in search_terms:
+      matches = re.findall(term, text, flags=re.IGNORECASE)
+      entry[term+'_search'] = len(matches) 
+
+  return entry
+
+def extract_sections(filename):
+  entry = {}
+
+  with open(filename, 'r', errors='replace') as txt_file:    
+    lines = txt_file.readlines()
+    logging.info(filename)
+    entry['lines'] = len(lines)
+    
+    # identifying the section titles
+    potential_section_name = False
+    current_section_name = ''
+    section_name = ''
+    empty_line = False
+    previous_empty_line = False
+    line_count = 0
+    entry['sections'] = {}
+    
+    for line in lines:
+      if re.match('\s+$', line):
+        empty_line = True
+      else:
+        empty_line = False
+      
+      if potential_section_name and empty_line:
+        logging.info(section_name)
+        entry['sections'][current_section_name] = line_count
+        current_section_name = section_name
+        line_count = 1
+        potential_section_name = False
+        previous_empty_line = empty_line
+        continue
+      
+      match = re.match('\d+\.?\s+([A-Z].+)$', line)
+      non_numbered_match = re.match('([A-Z][\w\s\d-]+)$', line)
+      if match:
+        if not re.search('\.\.\.', line) and (not re.search('\s\s+\d+\s$', line)) and previous_empty_line:
+          # multiple dots or multiple spaces before a number is a ToC entry, 
+          # previous line should be blank
+          potential_section_name = True
+          section_name = match.group(1).strip()
+        else:
+          potential_section_name = False
+      elif non_numbered_match:
+        if not re.search('\s\s', line) and previous_empty_line: 
+          # shouldn't have multiple consecutive spaces, previous line should be blank
+          potential_section_name = True
+          section_name = non_numbered_match.group(1).strip()
+        else:
+          potential_section_name = False
+      else:
+        potential_section_name = False  
+      
+      previous_empty_line = empty_line
+      line_count += 1
+  
+  return entry
 
 if __name__ == "__main__":
     main()

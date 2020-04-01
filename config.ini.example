@@ -2,4 +2,5 @@
 ARCHIVE_DIR = RFC-all
 
 [IDS]
+# ID_DIR should point to a directoyr like `short-id`, where every file is an I-D in plain text format.
 ID_DIR = short-id

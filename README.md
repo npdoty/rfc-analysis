@@ -35,6 +35,6 @@ The RFC Editor maintains zip and tar files of all the RFCs, in TXT and PDF forma
 
 ## See also
 
-* [Bigbang, a toolkit for studying communications data from collaborative projects](hthttps://github.com/datactive/bigbang)
+* [Bigbang, a toolkit for studying communications data from collaborative projects](https://github.com/datactive/bigbang)
 * [ietf-data, access the IETF DataTracker](https://github.com/glasgow-ipl/ietfdata)
 * [IETF Tools, a list of utilities](https://tools.ietf.org/)
